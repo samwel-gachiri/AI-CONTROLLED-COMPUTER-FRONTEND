@@ -90,10 +90,46 @@
               </div>
               <div class="ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Admins</dt>
-                  <dd class="text-lg font-medium text-gray-900">{{ adminCount }}</dd>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Protected Fields</dt>
+                  <dd class="text-lg font-medium text-gray-900">{{ protectedFieldsCount }}</dd>
                 </dl>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Field Protection Section -->
+      <div class="mb-8">
+        <div class="bg-white shadow rounded-lg">
+          <div class="px-4 py-5 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">🔒 Field Protection Management</h3>
+              <button @click="showFieldProtection = !showFieldProtection"
+                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <Shield class="h-4 w-4 mr-1" />
+                {{ showFieldProtection ? 'Hide' : 'Manage' }} Field Protection
+              </button>
+            </div>
+
+            <div v-if="!showFieldProtection" class="text-center py-6">
+              <Shield class="mx-auto h-12 w-12 text-gray-400" />
+              <h3 class="mt-2 text-sm font-medium text-gray-900">Field Protection</h3>
+              <p class="mt-1 text-sm text-gray-500">Manage protected fields and access requests from your team.</p>
+              <div class="mt-4 flex justify-center space-x-4 text-sm text-gray-600">
+                <div class="flex items-center">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  {{ pendingRequestsCount }} pending requests
+                </div>
+                <div class="flex items-center">
+                  <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  {{ protectedFieldsCount }} protected fields
+                </div>
+              </div>
+            </div>
+
+            <div v-if="showFieldProtection" class="field-protection-container">
+              <FieldProtection />
             </div>
           </div>
         </div>
@@ -265,6 +301,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 import TaskSharingModal from '@/components/modals/TaskSharingModal.vue'
+import FieldProtection from '@/views/dashboard/FieldProtection.vue'
 
 // Configure axios with base URL
 const api = axios.create({
@@ -285,6 +322,9 @@ const showAddEmployeeModal = ref(false)
 const addingEmployee = ref(false)
 const showTaskSharingModal = ref(false)
 const selectedTaskForSharing = ref(null)
+const showFieldProtection = ref(false)
+const protectedFieldsCount = ref(0)
+const pendingRequestsCount = ref(0)
 
 const newEmployee = reactive({
   name: '',
@@ -331,6 +371,34 @@ const loadSharedTasks = async () => {
     sharedTasks.value = response.data.tasks || []
   } catch (error) {
     console.error('Failed to load shared tasks:', error)
+  }
+}
+
+const loadFieldProtectionData = async () => {
+  try {
+    // Load protected fields count
+    const protectedResponse = await api.get('/api/field-protection/permissions', {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+
+    if (protectedResponse.data.success) {
+      protectedFieldsCount.value = Object.keys(protectedResponse.data.protected_fields || {}).length
+    }
+
+    // Load pending requests count
+    const requestsResponse = await api.get('/api/field-protection/pending-requests', {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+
+    if (requestsResponse.data.success) {
+      pendingRequestsCount.value = requestsResponse.data.requests?.length || 0
+    }
+  } catch (error) {
+    console.error('Failed to load field protection data:', error)
   }
 }
 
@@ -422,5 +490,16 @@ onMounted(() => {
 
   loadEmployees()
   loadSharedTasks()
+  loadFieldProtectionData()
 })
 </script>
+
+<style scoped>
+.field-protection-container {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+</style>
