@@ -176,14 +176,14 @@ const routes = [
     //         title: 'Terms of Service'
     //     }
     // },
-    // {
-    //     path: '/:pathMatch(.*)*',
-    //     name: 'NotFound',
-    //     component: () => import('@/views/NotFound.vue'),
-    //     meta: {
-    //         title: 'Page Not Found'
-    //     }
-    // }
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: () => import('@/views/NotFound.vue'),
+        meta: {
+            title: 'Page Not Found'
+        }
+    }
 ]
 
 const router = createRouter({
